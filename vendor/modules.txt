@@ -1,0 +1,26 @@
+# github.com/akamensky/argparse v1.2.2
+## explicit
+github.com/akamensky/argparse
+# github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129
+github.com/andres-erbsen/clock
+# github.com/avast/retry-go v3.0.0+incompatible
+## explicit
+github.com/avast/retry-go
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
+# github.com/grishinsana/goftx v1.2.0 => ../goftx
+## explicit
+github.com/grishinsana/goftx
+github.com/grishinsana/goftx/models
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
+# github.com/robfig/cron/v3 v3.0.0
+## explicit
+github.com/robfig/cron/v3
+# github.com/shopspring/decimal v1.2.0
+## explicit
+github.com/shopspring/decimal
+# go.uber.org/ratelimit v0.2.0
+## explicit
+go.uber.org/ratelimit
+# github.com/grishinsana/goftx => ../goftx
