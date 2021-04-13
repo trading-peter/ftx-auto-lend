@@ -79,7 +79,7 @@ func main() {
 		updateLendingOffer(coin, lendable, minRate)
 	})
 
-	fmt.Printf("Will attempt to update your lending offer for %s each hour.\nPress any key if you want to stop and exit the program.", coin)
+	fmt.Printf("Will attempt to update your lending offer for %s each hour.\nPress any key if you want to stop and exit the program.\n", coin)
 	fmt.Scanln()
 	fmt.Println("Bye!")
 }
