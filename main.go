@@ -26,7 +26,7 @@ func main() {
 	apiSecret := parser.String("s", "secret", &argparse.Options{Required: true, Help: "API secret"})
 	subAcc := parser.String("a", "subaccount", &argparse.Options{Required: false, Help: "Subaccount"})
 	coinList := parser.List("c", "coin", &argparse.Options{Required: false, Help: "Coin to lend"})
-	rate := parser.String("r", "min-rate", &argparse.Options{Required: false, Help: "Coin to lend"})
+	rate := parser.String("r", "min-rate", &argparse.Options{Required: false, Help: "Minimum lending rate"})
 	err := parser.Parse(os.Args)
 
 	if err != nil {
