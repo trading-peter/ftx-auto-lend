@@ -25,8 +25,8 @@ func main() {
 	apiKey := parser.String("k", "key", &argparse.Options{Required: true, Help: "API key"})
 	apiSecret := parser.String("s", "secret", &argparse.Options{Required: true, Help: "API secret"})
 	subAcc := parser.String("a", "subaccount", &argparse.Options{Required: false, Help: "Subaccount"})
-	coin := strings.ToUpper(*parser.String("c", "coin", &argparse.Options{Required: false, Default: "USD", Help: "Coin to lend"}))
-	strRate := strings.ToUpper(*parser.String("r", "min-rate", &argparse.Options{Required: false, Default: "0.000001", Help: "Coin to lend"}))
+	coinList := parser.List("c", "coin", &argparse.Options{Required: false, Help: "Coin to lend"})
+	rate := parser.String("r", "min-rate", &argparse.Options{Required: false, Help: "Coin to lend"})
 	err := parser.Parse(os.Args)
 
 	if err != nil {
@@ -34,8 +34,15 @@ func main() {
 		return
 	}
 
-	if coin == "" {
-		coin = "USD"
+	strCoins := []string{}
+	strRate := *rate
+
+	if len(*coinList) == 0 {
+		strCoins = append(strCoins, "USD")
+	} else {
+		for i := range *coinList {
+			strCoins = append(strCoins, strings.ToUpper((*coinList)[i]))
+		}
 	}
 
 	if strRate == "" {
@@ -62,24 +69,34 @@ func main() {
 	job.Start()
 
 	job.AddFunc("5 * * * *", func() {
-		lendable, delta, err := getMaxLendingAmount(coin)
+		for i := range strCoins {
+			coin := strCoins[i]
+			Info.Printf("Running lending offer update for %s.\n", coin)
+			lendable, delta, err := getMaxLendingAmount(coin)
 
-		if err != nil {
-			Error.Println(err)
+			if err != nil {
+				Error.Println(err)
+				continue
+			}
+
+			if delta.Equal(decimal.Zero) || delta.LessThan(decimal.Zero) {
+				Info.Println("No increase in funds to update lending offer.")
+				continue
+			}
+
+			Info.Printf("New lendable amount of %s is %s (+%s).", coin, lendable, delta)
+			Info.Printf("Updating lending offer with a minimum rate of %s.", minRate)
+
+			err = updateLendingOffer(coin, lendable, minRate)
+
+			if err != nil {
+				Error.Println(err)
+				continue
+			}
 		}
-
-		if delta.Equal(decimal.Zero) || delta.LessThan(decimal.Zero) {
-			Info.Println("No increase in funds to update lending offer.")
-			return
-		}
-
-		Info.Printf("New lendable amount of %s is %s (+%s).", coin, lendable, delta)
-		Info.Printf("Updating lending offer with a minimum rate of %s.", minRate)
-
-		updateLendingOffer(coin, lendable, minRate)
 	})
 
-	fmt.Printf("Will attempt to update your lending offer for %s each hour.\nPress any key if you want to stop and exit the program.\n", coin)
+	fmt.Printf("I will attempt to update your lending offers once per hour.\nPress any key if you want to stop and exit the program.")
 	fmt.Scanln()
 	fmt.Println("Bye!")
 }
@@ -116,7 +133,7 @@ func getMaxLendingAmount(coin string) (lendable decimal.Decimal, delta decimal.D
 			}
 
 			for i := range resp {
-				if resp[i].Coin == "USD" {
+				if resp[i].Coin == coin {
 					lendable = resp[i].Lendable
 					delta = resp[i].Lendable.Sub(resp[i].Offered)
 				}
