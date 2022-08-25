@@ -78,8 +78,8 @@ type TriggerOrderType string
 
 const (
 	Stop         = TriggerOrderType("stop")
-	TrailingStop = TriggerOrderType("trailing_stop")
-	TakeProfit   = TriggerOrderType("take_profit")
+	TrailingStop = TriggerOrderType("trailingStop")
+	TakeProfit   = TriggerOrderType("takeProfit")
 )
 
 type FTXTime struct {
@@ -111,3 +111,18 @@ func (f *FTXTime) UnmarshalJSON(data []byte) error {
 func (f FTXTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(float64(f.Time.UnixNano()) / float64(1000000000))
 }
+
+type Liquidity string
+
+const (
+	Taker = Liquidity("taker")
+	Maker = Liquidity("maker")
+)
+
+type FutureType string
+
+const (
+	TypeFuture = FutureType("future")
+	Perpetual  = FutureType("perpetual")
+	Move       = FutureType("move")
+)

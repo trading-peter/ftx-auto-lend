@@ -7,19 +7,26 @@ import (
 )
 
 type Market struct {
-	Name           string          `json:"name"`
-	Type           string          `json:"type"`
-	Underlying     string          `json:"underlying"`
-	BaseCurrency   string          `json:"baseCurrency"`
-	QuoteCurrency  string          `json:"quoteCurrency"`
-	Enabled        bool            `json:"enabled"`
-	Ask            decimal.Decimal `json:"ask"`
-	Bid            decimal.Decimal `json:"bid"`
-	Last           decimal.Decimal `json:"last"`
-	PostOnly       bool            `json:"postOnly"`
-	PriceIncrement decimal.Decimal `json:"priceIncrement"`
-	SizeIncrement  decimal.Decimal `json:"sizeIncrement"`
-	Restricted     bool            `json:"restricted"`
+	Name                  string          `json:"name"`
+	Underlying            string          `json:"underlying"`
+	BaseCurrency          string          `json:"baseCurrency"`
+	QuoteCurrency         string          `json:"quoteCurrency"`
+	Enabled               bool            `json:"enabled"`
+	Ask                   decimal.Decimal `json:"ask"`
+	Bid                   decimal.Decimal `json:"bid"`
+	Last                  decimal.Decimal `json:"last"`
+	PostOnly              bool            `json:"postOnly"`
+	PriceIncrement        decimal.Decimal `json:"priceIncrement"`
+	SizeIncrement         decimal.Decimal `json:"sizeIncrement"`
+	Restricted            bool            `json:"restricted"`
+	MinProvideSize        decimal.Decimal `json:"minProvideSize"`
+	VolumeUSD24h          decimal.Decimal `json:"volumeUsd24h"`
+	Type                  string          `json:"type"`
+	QuoteVolume24h        decimal.Decimal `json:"quoteVolume24h"`
+	HighLeverageFeeExempt bool            `json:"highLeverageFeeExempt"`
+	Change1h              decimal.Decimal `json:"change1h"`
+	Change24h             decimal.Decimal `json:"change24h"`
+	ChangeBod             decimal.Decimal `json:"changeBod"`
 }
 
 // The bids and asks are formatted like so:
@@ -83,22 +90,6 @@ type Ticker struct {
 	Time    FTXTime         `json:"time"`
 }
 
-type Fill struct {
-	Fee       decimal.Decimal `json:"fee"`
-	FeeRate   decimal.Decimal `json:"feeRate"`
-	Future    string          `json:"future"`
-	ID        int64           `json:"id"`
-	Liquidity string          `json:"liquidity"`
-	Market    string          `json:"market"`
-	OrderID   int64           `json:"orderId"`
-	TradeID   int64           `json:"tradeId"`
-	Price     decimal.Decimal `json:"price"`
-	Side      string          `json:"side"`
-	Size      decimal.Decimal `json:"size"`
-	Time      FTXTime         `json:"time"`
-	Type      string          `json:"type"`
-}
-
 type GetTradesParams struct {
 	Limit     *int `json:"limit"`
 	StartTime *int `json:"start_time"`
@@ -110,8 +101,4 @@ type GetHistoricalPricesParams struct {
 	Limit      *int       `json:"limit"`
 	StartTime  *int       `json:"start_time"`
 	EndTime    *int       `json:"end_time"`
-}
-
-type GetLastCandleParams struct {
-	Resolution Resolution `json:"resolution"`
 }

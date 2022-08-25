@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/grishinsana/goftx/models"
 	"github.com/pkg/errors"
+
+	"github.com/grishinsana/goftx/models"
 )
 
 const (
-	apiGetOpenOrders     = "/orders"
-	apiGetOrderStatus    = "/orders/%d"
-	apiGetOrdersHistory  = "/orders/history"
-	apiGetTriggerOrders  = "/conditional_orders"
-	apiGetOrderTriggers  = "/conditional_orders/%d/triggers"
-	apiPlaceTriggerOrder = "/conditional_orders"
-	apiPlaceOrder        = "/orders"
-	apiCancelOrders      = "/orders"
+	apiOrders                  = "/orders"
+	apiGetOrdersHistory        = "/orders/history"
+	apiModifyOrder             = "/orders/%d/modify"
+	apiModifyOrderByClientID   = "/orders/by_client_id/%d/modify"
+	apiTriggerOrders           = "/conditional_orders"
+	apiGetOrderTriggers        = "/conditional_orders/%d/triggers"
+	apiGetTriggerOrdersHistory = "/conditional_orders/history"
+	apiModifyTriggerOrder      = "/conditional_orders/%d/modify"
 )
 
 type Orders struct {
@@ -25,14 +26,18 @@ type Orders struct {
 }
 
 func (o *Orders) GetOpenOrders(market string) ([]*models.Order, error) {
-	request, err := o.client.prepareRequest(Request{
+	requestParams := Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetOpenOrders),
-		Params: map[string]string{
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiOrders),
+	}
+	if market != "" {
+		requestParams.Params = map[string]string{
 			"market": market,
-		},
-	})
+		}
+	}
+
+	request, err := o.client.prepareRequest(requestParams)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -51,30 +56,6 @@ func (o *Orders) GetOpenOrders(market string) ([]*models.Order, error) {
 	return result, nil
 }
 
-func (o *Orders) GetOrderStatus(orderID int64) (*models.Order, error) {
-	request, err := o.client.prepareRequest(Request{
-		Auth:   true,
-		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, fmt.Sprintf(apiGetOrderStatus, orderID)),
-	})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	response, err := o.client.do(request)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var result *models.Order
-	err = json.Unmarshal(response, &result)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return result, nil
-}
-
 func (o *Orders) GetOrdersHistory(params *models.GetOrdersHistoryParams) ([]*models.Order, error) {
 	queryParams, err := PrepareQueryParams(params)
 	if err != nil {
@@ -84,7 +65,7 @@ func (o *Orders) GetOrdersHistory(params *models.GetOrdersHistoryParams) ([]*mod
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetOrdersHistory),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiGetOrdersHistory),
 		Params: queryParams,
 	})
 	if err != nil {
@@ -114,7 +95,7 @@ func (o *Orders) GetOpenTriggerOrders(params *models.GetOpenTriggerOrdersParams)
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetTriggerOrders),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiTriggerOrders),
 		Params: queryParams,
 	})
 	if err != nil {
@@ -139,7 +120,7 @@ func (o *Orders) GetOrderTriggers(orderID int64) ([]*models.Trigger, error) {
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, fmt.Sprintf(apiGetOrderTriggers, orderID)),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, fmt.Sprintf(apiGetOrderTriggers, orderID)),
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -159,8 +140,38 @@ func (o *Orders) GetOrderTriggers(orderID int64) ([]*models.Trigger, error) {
 	return result, nil
 }
 
-func (o *Orders) PlaceOrder(orderParams models.PlaceOrderParams) (*models.Order, error) {
-	body, err := json.Marshal(orderParams)
+func (o *Orders) GetTriggerOrdersHistory(params *models.GetTriggerOrdersHistoryParams) ([]*models.TriggerOrder, error) {
+	queryParams, err := PrepareQueryParams(params)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodGet,
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiGetTriggerOrdersHistory),
+		Params: queryParams,
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result []*models.TriggerOrder
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
+}
+
+func (o *Orders) PlaceOrder(payload *models.PlaceOrderPayload) (*models.Order, error) {
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -168,7 +179,7 @@ func (o *Orders) PlaceOrder(orderParams models.PlaceOrderParams) (*models.Order,
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodPost,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiPlaceOrder),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiOrders),
 		Body:   body,
 	})
 	if err != nil {
@@ -189,8 +200,13 @@ func (o *Orders) PlaceOrder(orderParams models.PlaceOrderParams) (*models.Order,
 	return result, nil
 }
 
-func (o *Orders) PlaceTriggerOrder(orderParams interface{}) (*models.TriggerOrder, error) {
-	body, err := json.Marshal(orderParams)
+func (o *Orders) PlaceTriggerOrder(payload *models.PlaceTriggerOrderPayload) (*models.TriggerOrder, error) {
+	err := payload.Validate()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -198,7 +214,7 @@ func (o *Orders) PlaceTriggerOrder(orderParams interface{}) (*models.TriggerOrde
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodPost,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiPlaceTriggerOrder),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiTriggerOrders),
 		Body:   body,
 	})
 	if err != nil {
@@ -219,37 +235,200 @@ func (o *Orders) PlaceTriggerOrder(orderParams interface{}) (*models.TriggerOrde
 	return result, nil
 }
 
-func (o *Orders) CancelAllOrders(market string) error {
-	return o.cancelOrders(struct {
-		Market string `json:"market"`
-	}{
-		Market: market,
+func (o *Orders) ModifyOrder(payload *models.ModifyOrderPayload, orderID int64) (*models.Order, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodPost,
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, fmt.Sprintf(apiModifyOrder, orderID)),
+		Body:   body,
 	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result *models.Order
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
 }
 
-func (o *Orders) CancelAllLimitOrders(market string) error {
-	return o.cancelOrders(struct {
-		Market          string `json:"market"`
-		LimitOrdersOnly bool   `json:"limitOrdersOnly"`
-	}{
-		Market:          market,
-		LimitOrdersOnly: true,
+func (o *Orders) ModifyOrderByClientID(payload *models.ModifyOrderPayload, clientOrderID int64) (*models.Order, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodPost,
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, fmt.Sprintf(apiModifyOrderByClientID, clientOrderID)),
+		Body:   body,
 	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result *models.Order
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
 }
 
-func (o *Orders) CancelAllConditionalOrders(market string) error {
-	return o.cancelOrders(struct {
-		Market                string `json:"market"`
-		ConditionalOrdersOnly bool   `json:"conditionalOrdersOnly"`
-	}{
-		Market:                market,
-		ConditionalOrdersOnly: true,
+func (o *Orders) ModifyTriggerOrder(payload *models.ModifyTriggerOrderPayload, orderID int64) (*models.TriggerOrder, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodPost,
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, fmt.Sprintf(apiModifyTriggerOrder, orderID)),
+		Body:   body,
 	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result *models.TriggerOrder
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
 }
 
-func (o *Orders) cancelOrders(req interface{}) error {
-	body, err := json.Marshal(req)
+func (o *Orders) GetOrder(orderID int64) (*models.Order, error) {
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodGet,
+		URL:    fmt.Sprintf("%s%s/%d", o.client.apiURL, apiOrders, orderID),
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result *models.Order
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
+}
+
+func (o *Orders) GetOrderByClientID(clientOrderID string) (*models.Order, error) {
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodGet,
+		URL:    fmt.Sprintf("%s%s/by_client_id/%s", o.client.apiURL, apiOrders, clientOrderID),
+	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	response, err := o.client.do(request)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result *models.Order
+	err = json.Unmarshal(response, &result)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return result, nil
+}
+
+func (o *Orders) CancelOrder(orderID int64) error {
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodDelete,
+		URL:    fmt.Sprintf("%s%s/%d", o.client.apiURL, apiOrders, orderID),
+	})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = o.client.do(request)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func (o *Orders) CancelOrderByClientID(clientOrderID string) error {
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodDelete,
+		URL:    fmt.Sprintf("%s%s/by_client_id/%s", o.client.apiURL, apiOrders, clientOrderID),
+	})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = o.client.do(request)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func (o *Orders) CancelOpenTriggerOrder(triggerOrderID int64) error {
+	request, err := o.client.prepareRequest(Request{
+		Auth:   true,
+		Method: http.MethodDelete,
+		URL:    fmt.Sprintf("%s%s/%d", o.client.apiURL, apiTriggerOrders, triggerOrderID),
+	})
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = o.client.do(request)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func (o *Orders) CancelAllOrders(payload *models.CancelAllOrdersPayload) error {
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -257,7 +436,7 @@ func (o *Orders) cancelOrders(req interface{}) error {
 	request, err := o.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodDelete,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiCancelOrders),
+		URL:    fmt.Sprintf("%s%s", o.client.apiURL, apiOrders),
 		Body:   body,
 	})
 	if err != nil {

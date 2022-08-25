@@ -14,7 +14,6 @@ import (
 const (
 	apiGetAccountInformation = "/account"
 	apiGetPositions          = "/positions"
-	apiGetBalances           = "/wallet/balances"
 	apiPostLeverage          = "/account/leverage"
 )
 
@@ -26,7 +25,7 @@ func (a *Account) GetAccountInformation() (*models.AccountInformation, error) {
 	request, err := a.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetAccountInformation),
+		URL:    fmt.Sprintf("%s%s", a.client.apiURL, apiGetAccountInformation),
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -46,35 +45,11 @@ func (a *Account) GetAccountInformation() (*models.AccountInformation, error) {
 	return result, nil
 }
 
-func (s *Account) GetBalances() ([]*models.Balance, error) {
-	request, err := s.client.prepareRequest(Request{
-		Auth:   true,
-		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetBalances),
-	})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	response, err := s.client.do(request)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var result []*models.Balance
-	err = json.Unmarshal(response, &result)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return result, nil
-}
-
 func (a *Account) GetPositions() ([]*models.Position, error) {
 	request, err := a.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetPositions),
+		URL:    fmt.Sprintf("%s%s", a.client.apiURL, apiGetPositions),
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -105,7 +80,7 @@ func (a *Account) ChangeAccountLeverage(leverage decimal.Decimal) error {
 	request, err := a.client.prepareRequest(Request{
 		Auth:   true,
 		Method: http.MethodPost,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiPostLeverage),
+		URL:    fmt.Sprintf("%s%s", a.client.apiURL, apiPostLeverage),
 		Body:   body,
 	})
 	if err != nil {

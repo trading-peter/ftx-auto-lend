@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/grishinsana/goftx/models"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 )
 
 var (
-	limiter ratelimit.Limiter = ratelimit.New(30)
+	limiter = ratelimit.New(30)
 	client  *goftx.Client
 )
 
@@ -46,19 +48,17 @@ func main() {
 	}
 
 	if strRate == "" {
-		strRate = "0.000001"
+		strRate = "0.00000001"
 	}
 
-	minRate, err := decimal.NewFromString(strRate)
+	minRate, err := strconv.ParseFloat(strRate, 64)
 
 	if err != nil {
 		Error.Fatal("Min Rate: Invalid number")
 	}
 
 	client = goftx.New(
-		goftx.WithAuth(*apiKey, *apiSecret),
-		goftx.WithSubaccount(*subAcc),
-	)
+		goftx.WithAuth(*apiKey, *apiSecret, *subAcc))
 
 	_, err = client.GetAccountInformation()
 
@@ -101,12 +101,16 @@ func main() {
 	fmt.Println("Bye!")
 }
 
-func updateLendingOffer(coin string, amount decimal.Decimal, minRate decimal.Decimal) (err error) {
+func updateLendingOffer(coin string, amount decimal.Decimal, minRate float64) (err error) {
 	err = retry.Do(
 		func() error {
 			limiter.Take()
-			err := client.SubmitLendingOffer(coin, amount, minRate)
+			var payloadvar = new(models.LendingOfferPayload)
+			payloadvar.Size = amount
+			payloadvar.Rate = minRate
+			payloadvar.Coin = coin
 
+			err := client.SubmitLendingOffer(payloadvar)
 			if err != nil {
 				fmt.Printf("%+v\n", err)
 				return err

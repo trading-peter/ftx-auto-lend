@@ -15,7 +15,6 @@ const (
 	apiGetOrderBook        = "/markets/%s/orderbook"
 	apiGetTrades           = "/markets/%s/trades"
 	apiGetHistoricalPrices = "/markets/%s/candles"
-	apiGetLastCandle       = "/markets/%s/candles/last"
 )
 
 type Markets struct {
@@ -25,7 +24,7 @@ type Markets struct {
 func (m *Markets) GetMarkets() ([]*models.Market, error) {
 	request, err := m.client.prepareRequest(Request{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, apiGetMarkets),
+		URL:    fmt.Sprintf("%s%s", m.client.apiURL, apiGetMarkets),
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -48,7 +47,7 @@ func (m *Markets) GetMarkets() ([]*models.Market, error) {
 func (m *Markets) GetMarketByName(name string) (*models.Market, error) {
 	request, err := m.client.prepareRequest(Request{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s/%s", apiUrl, apiGetMarkets, name),
+		URL:    fmt.Sprintf("%s%s/%s", m.client.apiURL, apiGetMarkets, name),
 	})
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -78,7 +77,7 @@ func (m *Markets) GetOrderBook(marketName string, depth *int) (*models.OrderBook
 
 	request, err := m.client.prepareRequest(Request{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, path),
+		URL:    fmt.Sprintf("%s%s", m.client.apiURL, path),
 		Params: params,
 	})
 	if err != nil {
@@ -108,7 +107,7 @@ func (m *Markets) GetTrades(marketName string, params *models.GetTradesParams) (
 	path := fmt.Sprintf(apiGetTrades, marketName)
 	request, err := m.client.prepareRequest(Request{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, path),
+		URL:    fmt.Sprintf("%s%s", m.client.apiURL, path),
 		Params: queryParams,
 	})
 	if err != nil {
@@ -138,7 +137,7 @@ func (m *Markets) GetHistoricalPrices(marketName string, params *models.GetHisto
 	path := fmt.Sprintf(apiGetHistoricalPrices, marketName)
 	request, err := m.client.prepareRequest(Request{
 		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, path),
+		URL:    fmt.Sprintf("%s%s", m.client.apiURL, path),
 		Params: queryParams,
 	})
 	if err != nil {
@@ -151,36 +150,6 @@ func (m *Markets) GetHistoricalPrices(marketName string, params *models.GetHisto
 	}
 
 	var result []*models.HistoricalPrice
-	err = json.Unmarshal(response, &result)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return result, nil
-}
-
-func (m *Markets) GetLastCandle(marketName string, params *models.GetLastCandleParams) (*models.HistoricalPrice, error) {
-	queryParams, err := PrepareQueryParams(params)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	path := fmt.Sprintf(apiGetLastCandle, marketName)
-	request, err := m.client.prepareRequest(Request{
-		Method: http.MethodGet,
-		URL:    fmt.Sprintf("%s%s", apiUrl, path),
-		Params: queryParams,
-	})
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	response, err := m.client.do(request)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	var result *models.HistoricalPrice
 	err = json.Unmarshal(response, &result)
 	if err != nil {
 		return nil, errors.WithStack(err)
